@@ -1,0 +1,72 @@
+# 开发环境配置覆盖
+services:
+  # API 服务开发配置
+  api:
+    build:
+      target: builder  # 使用构建阶段进行开发
+    command: ["go", "run", "./cmd/api"]
+    volumes:
+      - .:/app:cached
+      - go_mod_cache:/go/pkg/mod
+    environment:
+      - CGO_ENABLED=0
+      - APP_ENV=development
+    ports:
+      - "8080:8080"
+      - "2345:2345"  # Delve 调试器端口
+    stdin_open: true
+    tty: true
+
+  # 调度器服务开发配置
+  scheduler:
+    build:
+      target: builder
+    command: ["go", "run", "./cmd/scheduler"]
+    volumes:
+      - .:/app:cached
+      - go_mod_cache:/go/pkg/mod
+    environment:
+      - CGO_ENABLED=0
+      - APP_ENV=development
+    stdin_open: true
+    tty: true
+
+  # 数据库开发配置
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  # Redis 开发配置
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  # RabbitMQ 开发配置
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # 管理界面
+
+  # 开发工具
+  adminer:
+    image: adminer:latest
+    container_name: skeleton_adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - skeleton_network
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  go_mod_cache:
+    driver: local
+  postgres_dev_data:
+    driver: local 

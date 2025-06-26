@@ -1,0 +1,161 @@
+package wire
+
+import (
+	"github.com/hedeqiang/skeleton/internal/app"
+	"github.com/hedeqiang/skeleton/internal/config"
+	v1 "github.com/hedeqiang/skeleton/internal/handler/v1"
+	"github.com/hedeqiang/skeleton/internal/repository"
+	"github.com/hedeqiang/skeleton/internal/scheduler"
+	"github.com/hedeqiang/skeleton/internal/service"
+	"github.com/hedeqiang/skeleton/pkg/database"
+	"github.com/hedeqiang/skeleton/pkg/logger"
+	"github.com/hedeqiang/skeleton/pkg/mq"
+	redispkg "github.com/hedeqiang/skeleton/pkg/redis"
+	"errors"
+
+	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
+)
+
+var (
+	// ErrMainDatabaseNotFound 主数据库未找到错误
+	ErrMainDatabaseNotFound = errors.New("main database connection not found")
+)
+
+// InfrastructureSet 基础设施层提供者集合
+var InfrastructureSet = wire.NewSet(
+	// 配置
+	config.LoadConfig,
+	ProvideLoggerConfig,
+	ProvideDatabasesConfig,
+	ProvideRedisConfig,
+	ProvideRabbitMQConfig,
+
+	// 日志
+	logger.New,
+
+	// 数据库
+	database.NewDatabases,
+	ProvideMainDatabase,
+
+	// Redis
+	redispkg.NewRedis,
+
+	// RabbitMQ
+	mq.NewRabbitMQ,
+	ProvideProducer,
+)
+
+// RepositorySet Repository 层提供者集合
+var RepositorySet = wire.NewSet(
+	repository.NewUserRepository,
+)
+
+// ServiceSet Service 层提供者集合
+var ServiceSet = wire.NewSet(
+	service.NewUserService,
+	service.NewHelloService,
+)
+
+// HandlerSet Handler 层提供者集合
+var HandlerSet = wire.NewSet(
+	v1.NewUserHandler,
+	v1.NewHelloHandler,
+	v1.NewSchedulerHandler,
+)
+
+// SchedulerSet 调度器相关依赖
+var SchedulerSet = wire.NewSet(
+	ProvideSchedulerService,
+	ProvideJobRegistry,
+)
+
+// AppSet App 层提供者集合
+var AppSet = wire.NewSet(
+	ProvideApp,
+)
+
+// AllSet 所有提供者的集合
+var AllSet = wire.NewSet(
+	InfrastructureSet,
+	RepositorySet,
+	ServiceSet,
+	HandlerSet,
+	SchedulerSet,
+	AppSet,
+)
+
+// ProvideMainDatabase 提供主数据库连接
+func ProvideMainDatabase(dataSources map[string]*gorm.DB) (*gorm.DB, error) {
+	db, exists := dataSources["primary"]
+	if !exists {
+		return nil, ErrMainDatabaseNotFound
+	}
+	return db, nil
+}
+
+// ProvideLoggerConfig 提供日志配置
+func ProvideLoggerConfig(cfg *config.Config) *config.Logger {
+	return &cfg.Logger
+}
+
+// ProvideDatabasesConfig 提供数据库配置
+func ProvideDatabasesConfig(cfg *config.Config) map[string]config.Database {
+	return cfg.Databases
+}
+
+// ProvideRedisConfig 提供Redis配置
+func ProvideRedisConfig(cfg *config.Config) *config.Redis {
+	return &cfg.Redis
+}
+
+// ProvideRabbitMQConfig 提供RabbitMQ配置
+func ProvideRabbitMQConfig(cfg *config.Config) *config.RabbitMQ {
+	return &cfg.RabbitMQ
+}
+
+// ProvideProducer 提供 MQ Producer
+func ProvideProducer(conn *amqp.Connection) *mq.Producer {
+	return mq.NewProducer(conn)
+}
+
+// ProvideSchedulerService 提供调度器服务
+func ProvideSchedulerService(logger *zap.Logger) (*scheduler.SchedulerService, error) {
+	return scheduler.NewSchedulerService(logger)
+}
+
+// ProvideJobRegistry 提供任务注册器
+func ProvideJobRegistry(schedulerService *scheduler.SchedulerService, logger *zap.Logger, cfg *config.Config) *scheduler.JobRegistry {
+	return scheduler.NewJobRegistry(schedulerService, logger, cfg.Scheduler)
+}
+
+// ProvideApp 提供应用实例
+func ProvideApp(
+	logger *zap.Logger,
+	config *config.Config,
+	dataSources map[string]*gorm.DB,
+	mainDB *gorm.DB,
+	redisClient *redis.Client,
+	rabbitMQ *amqp.Connection,
+	userHandler *v1.UserHandler,
+	helloHandler *v1.HelloHandler,
+	schedulerHandler *v1.SchedulerHandler,
+	jobRegistry *scheduler.JobRegistry,
+) *app.App {
+	return app.NewApp(
+		logger,
+		config,
+		dataSources,
+		mainDB,
+		redisClient,
+		rabbitMQ,
+		userHandler,
+		helloHandler,
+		schedulerHandler,
+		jobRegistry,
+	)
+}

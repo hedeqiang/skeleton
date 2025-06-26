@@ -1,0 +1,81 @@
+# 应用配置
+app:
+  name: "skeleton_api"
+  env: "development"
+  host: "0.0.0.0"
+  port: 8080
+
+# 日志配置
+logger:
+  level: "debug" # 日志级别: debug, info, warn, error
+  encoding: "console" # 编码格式: console, json
+  output_path: ["stdout"] # 输出位置: stdout, 或者文件路径如 ["./logs/app.log"]
+
+# 多数据源配置
+databases:
+  # 主业务数据库
+  primary:
+    type: "mysql"
+    # 提醒：请确保您的本地 MySQL 正在运行，并已创建名为 'testdb' 的数据库
+    # CREATE DATABASE testdb;
+    dsn: "root:passworld@tcp(127.0.0.1:3306)/testdb?charset=utf8mb4&parseTime=True&loc=Local"
+    max_open_conns: 100
+    max_idle_conns: 10
+    conn_max_lifetime: "1h"
+
+  # 只读副本 (开发环境暂时禁用)
+  # replica:
+  #   type: "mysql"
+  #   dsn: "root:passworld@tcp(127.0.0.1:3307)/testdb?charset=utf8mb4&parseTime=True&loc=Local"
+  #   max_open_conns: 50
+  #   max_idle_conns: 5
+  #   conn_max_lifetime: "1h"
+
+# Redis 配置
+redis:
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+
+# RabbitMQ 配置
+rabbitmq:
+  url: "amqp://guest:guest@127.0.0.1:5672/"
+  exchanges:
+    - name: "hello.exchange"
+      type: "direct"
+      durable: true
+      auto_delete: false
+  queues:
+    - name: "hello.queue"
+      durable: true
+      auto_delete: false
+      exclusive: false
+      exchange: "hello.exchange"
+      routing_keys: ["hello"]
+
+# 计划任务配置
+scheduler:
+  enabled: true
+  jobs:
+    - name: "hello_job"
+      type: "duration"
+      schedule: "30s"
+      enabled: true
+      description: "Hello world scheduled job"
+    - name: "cleanup_job"
+      type: "cron"
+      schedule: "0 0 * * *"
+      enabled: false
+      description: "Daily cleanup job"
+
+# OpenTelemetry Tracing 配置 (以 Jaeger 为例)
+trace:
+  enabled: false # 开发环境暂时禁用
+  endpoint: "http://127.0.0.1:14268/api/traces"
+  sampler_type: "const" # 可选: const, probabilistic, rateLimiting, remote
+  sampler_param: 1 # Sampler 参数, 对于 const, 1 表示全采样, 0 表示不采样
+
+# JWT 认证配置
+jwt:
+  secret: "a-secure-secret-key-that-is-long-enough" # 生产环境请务必从环境变量读取
+  expire_duration: "24h" 
