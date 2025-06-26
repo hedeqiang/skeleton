@@ -111,17 +111,24 @@ type JWT struct {
 // LoadConfig 加载配置并返回 Config 实例
 func LoadConfig() (*Config, error) {
 	v := viper.New()
-	v.SetConfigFile("configs/config.dev.yaml")
+
+	// 开启环境变量支持
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// 从环境变量获取配置文件路径，默认使用 config.dev.yaml
+	configFile := "configs/config.dev.yaml"
+	if envConfigFile := v.GetString("CONFIG_FILE"); envConfigFile != "" {
+		configFile = envConfigFile
+	}
+
+	v.SetConfigFile(configFile)
 	v.SetConfigType("yaml")
 
 	// 读取配置文件
 	if err := v.ReadInConfig(); err != nil {
 		return nil, err
 	}
-
-	// 开启环境变量支持
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

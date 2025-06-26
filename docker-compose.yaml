@@ -74,21 +74,10 @@ services:
         GIT_COMMIT: ${GIT_COMMIT}
     container_name: skeleton_api
     environment:
+      - CONFIG_FILE=/app/configs/config.docker.yaml
       - APP_ENV=${APP_ENV:-development}
       - APP_HOST=0.0.0.0
       - APP_PORT=8080
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-123456}
-      - DATABASE_NAME=skeleton
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
@@ -111,6 +100,34 @@ services:
       start_period: 40s
     restart: unless-stopped
 
+  # 消息消费者服务
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: consumer
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME}
+        GIT_COMMIT: ${GIT_COMMIT}
+    container_name: skeleton_consumer
+    environment:
+      - CONFIG_FILE=/app/configs/config.docker.yaml
+      - APP_ENV=${APP_ENV:-development}
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+    networks:
+      - skeleton_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   # 调度器服务
   scheduler:
     build:
@@ -123,19 +140,8 @@ services:
         GIT_COMMIT: ${GIT_COMMIT}
     container_name: skeleton_scheduler
     environment:
+      - CONFIG_FILE=/app/configs/config.docker.yaml
       - APP_ENV=${APP_ENV:-development}
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-123456}
-      - DATABASE_NAME=skeleton
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
     volumes:
       - ./configs:/app/configs:ro
       - ./logs:/app/logs

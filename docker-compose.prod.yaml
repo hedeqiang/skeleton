@@ -28,6 +28,33 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # 消费者服务生产配置
+  consumer:
+    image: skeleton/consumer:${VERSION:-latest}
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    environment:
+      - APP_ENV=production
+    volumes:
+      - ./configs/config.prod.yaml:/app/configs/config.yaml:ro
+      - /var/log/skeleton:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # 调度器服务生产配置
   scheduler:
     image: skeleton/scheduler:${VERSION:-latest}

@@ -1,0 +1,73 @@
+# 生产环境配置文件
+# 应用配置
+app:
+  name: "skeleton"
+  env: "production"
+  host: "0.0.0.0"
+  port: 8080
+
+# 日志配置
+logger:
+  level: "info" # 生产环境使用 info 级别
+  encoding: "json" # JSON格式便于日志收集
+  output_path: ["./logs/app.log", "stdout"] # 同时输出到文件和标准输出
+
+# 多数据源配置
+databases:
+  # 主业务数据库
+  primary:
+    type: "postgres"
+    # 生产环境使用更严格的连接配置
+    dsn: "host=postgres port=5432 user=postgres password=${POSTGRES_PASSWORD} dbname=skeleton sslmode=require TimeZone=UTC"
+    max_open_conns: 100
+    max_idle_conns: 20
+    conn_max_lifetime: "1h"
+
+# Redis 配置
+redis:
+  addr: "redis:6379"
+  password: "${REDIS_PASSWORD}"
+  db: 0
+
+# RabbitMQ 配置
+rabbitmq:
+  url: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/"
+  exchanges:
+    - name: "hello.exchange"
+      type: "direct"
+      durable: true
+      auto_delete: false
+  queues:
+    - name: "hello.queue"
+      durable: true
+      auto_delete: false
+      exclusive: false
+      exchange: "hello.exchange"
+      routing_keys: ["hello"]
+
+# 计划任务配置
+scheduler:
+  enabled: true
+  jobs:
+    - name: "hello_job"
+      type: "duration"
+      schedule: "1m" # 生产环境调度间隔更长
+      enabled: true
+      description: "Hello world scheduled job"
+    - name: "cleanup_job"
+      type: "cron"
+      schedule: "0 2 * * *" # 每天凌晨2点执行清理
+      enabled: true
+      description: "Daily cleanup job"
+
+# OpenTelemetry Tracing 配置
+trace:
+  enabled: true # 生产环境启用链路追踪
+  endpoint: "http://jaeger:14268/api/traces"
+  sampler_type: "probabilistic" # 概率采样，减少性能影响
+  sampler_param: 0.1 # 10% 采样率
+
+# JWT 认证配置
+jwt:
+  secret: "${JWT_SECRET}" # 生产环境必须从环境变量读取
+  expire_duration: "24h" 

@@ -1,3 +1,4 @@
+# Docker环境专用配置文件
 # 应用配置
 app:
   name: "skeleton"
@@ -8,36 +9,28 @@ app:
 # 日志配置
 logger:
   level: "debug" # 日志级别: debug, info, warn, error
-  encoding: "console" # 编码格式: console, json
+  encoding: "json" # 编码格式: console, json
   output_path: ["stdout"] # 输出位置: stdout, 或者文件路径如 ["./logs/app.log"]
 
 # 多数据源配置
 databases:
   # 主业务数据库
   primary:
-    type: "mysql"
-    dsn: "root:passworld@tcp(127.0.0.1:3306)/testdb?charset=utf8mb4&parseTime=True&loc=Local"
+    type: "postgres"
+    dsn: "host=postgres port=5432 user=postgres password=123456 dbname=skeleton sslmode=disable TimeZone=Asia/Shanghai"
     max_open_conns: 100
     max_idle_conns: 10
     conn_max_lifetime: "1h"
 
-  # 只读副本 (开发环境暂时禁用)
-  # replica:
-  #   type: "mysql"
-  #   dsn: "root:passworld@tcp(127.0.0.1:3306)/testdb?charset=utf8mb4&parseTime=True&loc=Local"
-  #   max_open_conns: 50
-  #   max_idle_conns: 5
-  #   conn_max_lifetime: "1h"
-
 # Redis 配置
 redis:
-  addr: "127.0.0.1:6379"
-  password: ""
+  addr: "redis:6379"
+  password: "redis123"
   db: 0
 
 # RabbitMQ 配置
 rabbitmq:
-  url: "amqp://guest:guest@127.0.0.1:5672/"
+  url: "amqp://admin:admin123@rabbitmq:5672/"
   exchanges:
     - name: "hello.exchange"
       type: "direct"
@@ -53,7 +46,7 @@ rabbitmq:
 
 # 计划任务配置
 scheduler:
-  enabled: false
+  enabled: true
   jobs:
     - name: "hello_job"
       type: "duration"

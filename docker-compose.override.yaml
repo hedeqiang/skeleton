@@ -17,6 +17,20 @@ services:
     stdin_open: true
     tty: true
 
+  # 消费者服务开发配置
+  consumer:
+    build:
+      target: builder
+    command: ["go", "run", "./cmd/consumer"]
+    volumes:
+      - .:/app:cached
+      - go_mod_cache:/go/pkg/mod
+    environment:
+      - CGO_ENABLED=0
+      - APP_ENV=development
+    stdin_open: true
+    tty: true
+
   # 调度器服务开发配置
   scheduler:
     build:
