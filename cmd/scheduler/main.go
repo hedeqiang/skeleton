@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// 初始化日志 - 转换为旧的Logger格式
+	// 初始化日志
 	loggerConfig := &config.Logger{
 		Level:      cfg.Logger.Level,
 		Encoding:   "console",
