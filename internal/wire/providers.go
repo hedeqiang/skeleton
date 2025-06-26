@@ -1,6 +1,8 @@
 package wire
 
 import (
+	"errors"
+
 	"github.com/hedeqiang/skeleton/internal/app"
 	"github.com/hedeqiang/skeleton/internal/config"
 	v1 "github.com/hedeqiang/skeleton/internal/handler/v1"
@@ -11,7 +13,6 @@ import (
 	"github.com/hedeqiang/skeleton/pkg/logger"
 	"github.com/hedeqiang/skeleton/pkg/mq"
 	redispkg "github.com/hedeqiang/skeleton/pkg/redis"
-	"errors"
 
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
