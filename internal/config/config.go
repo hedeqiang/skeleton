@@ -13,14 +13,15 @@ var C *Config
 
 // Config 是整个应用的配置结构体
 type Config struct {
-	App       App                 `mapstructure:"app"`
-	Logger    Logger              `mapstructure:"logger"`
-	Databases map[string]Database `mapstructure:"databases"`
-	Redis     Redis               `mapstructure:"redis"`
-	RabbitMQ  RabbitMQ            `mapstructure:"rabbitmq"`
-	Scheduler SchedulerConfig     `mapstructure:"scheduler"`
-	Trace     Trace               `mapstructure:"trace"`
-	JWT       JWT                 `mapstructure:"jwt"`
+	App         App                 `mapstructure:"app"`
+	Logger      Logger              `mapstructure:"logger"`
+	Databases   map[string]Database `mapstructure:"databases"`
+	Redis       Redis               `mapstructure:"redis"`
+	RabbitMQ    RabbitMQ            `mapstructure:"rabbitmq"`
+	Scheduler   SchedulerConfig     `mapstructure:"scheduler"`
+	Trace       Trace               `mapstructure:"trace"`
+	JWT         JWT                 `mapstructure:"jwt"`
+	IDGenerator *IDGeneratorConfig  `mapstructure:"id_generator"`
 }
 
 // App 应用配置
@@ -106,6 +107,15 @@ type Trace struct {
 type JWT struct {
 	Secret         string        `mapstructure:"secret"`
 	ExpireDuration time.Duration `mapstructure:"expire_duration"`
+}
+
+// IDGeneratorConfig ID生成器配置
+type IDGeneratorConfig struct {
+	StartTime     time.Time     `mapstructure:"start_time"`      // 起始时间
+	MachineID     int           `mapstructure:"machine_id"`      // 机器ID（0表示自动获取）
+	BitsSequence  int           `mapstructure:"bits_sequence"`   // 序列号位数
+	BitsMachineID int           `mapstructure:"bits_machine_id"` // 机器ID位数
+	TimeUnit      time.Duration `mapstructure:"time_unit"`       // 时间单位
 }
 
 // LoadConfig 加载配置并返回 Config 实例

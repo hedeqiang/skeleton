@@ -10,6 +10,7 @@ import (
 	"github.com/hedeqiang/skeleton/internal/scheduler"
 	"github.com/hedeqiang/skeleton/internal/service"
 	"github.com/hedeqiang/skeleton/pkg/database"
+	"github.com/hedeqiang/skeleton/pkg/idgen"
 	"github.com/hedeqiang/skeleton/pkg/logger"
 	"github.com/hedeqiang/skeleton/pkg/mq"
 	redispkg "github.com/hedeqiang/skeleton/pkg/redis"
@@ -49,6 +50,9 @@ var InfrastructureSet = wire.NewSet(
 	// RabbitMQ
 	mq.NewRabbitMQ,
 	ProvideProducer,
+
+	// ID生成器
+	ProvideIDGenerator,
 )
 
 // RepositorySet Repository 层提供者集合
@@ -142,6 +146,7 @@ func ProvideApp(
 	mainDB *gorm.DB,
 	redisClient *redis.Client,
 	rabbitMQ *amqp.Connection,
+	idGenerator idgen.IDGenerator,
 	userHandler *v1.UserHandler,
 	helloHandler *v1.HelloHandler,
 	schedulerHandler *v1.SchedulerHandler,
@@ -154,9 +159,43 @@ func ProvideApp(
 		mainDB,
 		redisClient,
 		rabbitMQ,
+		idGenerator,
 		userHandler,
 		helloHandler,
 		schedulerHandler,
 		jobRegistry,
 	)
+}
+
+// ProvideIDGenerator 提供ID生成器
+func ProvideIDGenerator(cfg *config.Config, logger *zap.Logger) (idgen.IDGenerator, error) {
+	// 如果配置中有ID生成器配置，使用自定义配置
+	if cfg.IDGenerator != nil {
+		config := idgen.Config{
+			StartTime:     cfg.IDGenerator.StartTime,
+			MachineID:     cfg.IDGenerator.MachineID,
+			BitsSequence:  cfg.IDGenerator.BitsSequence,
+			BitsMachineID: cfg.IDGenerator.BitsMachineID,
+			TimeUnit:      cfg.IDGenerator.TimeUnit,
+		}
+
+		generator, err := idgen.NewSonyflakeGeneratorWithConfig(config)
+		if err != nil {
+			logger.Error("Failed to create ID generator with config", zap.Error(err))
+			return nil, err
+		}
+
+		logger.Info("ID generator created with custom config")
+		return generator, nil
+	}
+
+	// 使用默认配置
+	generator, err := idgen.NewSonyflakeGenerator()
+	if err != nil {
+		logger.Error("Failed to create default ID generator", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("Default ID generator created")
+	return generator, nil
 }

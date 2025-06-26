@@ -1,8 +1,6 @@
 package app
 
 import (
-	"github.com/hedeqiang/skeleton/internal/router"
-	"github.com/hedeqiang/skeleton/internal/scheduler"
 	"context"
 	"fmt"
 	"net/http"
@@ -10,6 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/hedeqiang/skeleton/internal/router"
+	"github.com/hedeqiang/skeleton/internal/scheduler"
+	"github.com/hedeqiang/skeleton/pkg/idgen"
 
 	"github.com/hedeqiang/skeleton/internal/config"
 	v1 "github.com/hedeqiang/skeleton/internal/handler/v1"
@@ -34,6 +36,7 @@ type App struct {
 	MainDB      *gorm.DB
 	Redis       *redis.Client
 	RabbitMQ    *amqp.Connection
+	IDGenerator idgen.IDGenerator
 
 	// 业务层依赖
 	UserHandler      *v1.UserHandler
@@ -50,6 +53,7 @@ func NewApp(
 	mainDB *gorm.DB,
 	redis *redis.Client,
 	rabbitMQ *amqp.Connection,
+	idGenerator idgen.IDGenerator,
 	userHandler *v1.UserHandler,
 	helloHandler *v1.HelloHandler,
 	schedulerHandler *v1.SchedulerHandler,
@@ -81,6 +85,7 @@ func NewApp(
 		MainDB:           mainDB,
 		Redis:            redis,
 		RabbitMQ:         rabbitMQ,
+		IDGenerator:      idGenerator,
 		UserHandler:      userHandler,
 		HelloHandler:     helloHandler,
 		SchedulerHandler: schedulerHandler,

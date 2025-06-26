@@ -11,6 +11,7 @@ require (
 	github.com/google/wire v0.6.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.11.0
+	github.com/sony/sonyflake/v2 v2.2.0
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.39.0
