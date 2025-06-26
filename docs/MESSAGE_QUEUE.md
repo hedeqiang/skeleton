@@ -81,7 +81,7 @@ go run cmd/api/main.go
 make test-mq-api
 
 # 或者手动发送
-curl -X POST http://localhost:8080/api/v1/hello/publish \
+curl -X POST http://localhost:8080/api/v1/messages/hello/publish \
   -H "Content-Type: application/json" \
   -d '{"content": "Hello, World!", "sender": "test-user"}'
 ```
@@ -90,7 +90,7 @@ curl -X POST http://localhost:8080/api/v1/hello/publish \
 
 ### API 端点
 
-**发布消息**: `POST /api/v1/hello/publish`
+**发布消息**: `POST /api/v1/messages/hello/publish`
 
 **请求格式**:
 ```json

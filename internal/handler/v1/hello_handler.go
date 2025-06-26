@@ -1,10 +1,11 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/hedeqiang/skeleton/internal/model"
 	"github.com/hedeqiang/skeleton/internal/service"
 	"github.com/hedeqiang/skeleton/pkg/response"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -37,7 +38,7 @@ func NewHelloHandler(helloService service.HelloService, logger *zap.Logger) *Hel
 // @Success 200 {object} response.Response{data=map[string]string} "发布成功"
 // @Failure 400 {object} response.Response "请求参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/hello/publish [post]
+// @Router /api/v1/messages/hello/publish [post]
 func (h *HelloHandler) PublishHelloMessage(c *gin.Context) {
 	var req model.PublishHelloRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
