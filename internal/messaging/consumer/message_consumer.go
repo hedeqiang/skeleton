@@ -1,10 +1,11 @@
 package consumer
 
 import (
+	"context"
+
 	"github.com/hedeqiang/skeleton/internal/app"
 	"github.com/hedeqiang/skeleton/internal/messaging"
 	"github.com/hedeqiang/skeleton/internal/messaging/processors"
-	"context"
 
 	"go.uber.org/zap"
 )
@@ -19,8 +20,8 @@ type MessageConsumerService struct {
 // NewMessageConsumerService 创建消息消费服务
 func NewMessageConsumerService(app *app.App) *MessageConsumerService {
 	service := &MessageConsumerService{
-		processorRegistry: messaging.NewProcessorRegistry(app.Logger),
-		logger:            app.Logger,
+		processorRegistry: messaging.NewProcessorRegistry(app.Logger()),
+		logger:            app.Logger(),
 		app:               app,
 	}
 
