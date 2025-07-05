@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/hedeqiang/skeleton/internal/app"
 	"github.com/hedeqiang/skeleton/internal/messaging/consumer"
 	"github.com/hedeqiang/skeleton/internal/wire"
 	"github.com/hedeqiang/skeleton/pkg/mq"
-	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	application.Logger.Info("Starting message consumer service...")
+	application.Logger().Info("Starting message consumer service...")
 
 	// 创建消息消费服务（自动注册所有事件处理器）
 	messageConsumerService := consumer.NewMessageConsumerService(application)
@@ -31,47 +31,47 @@ func main() {
 	// 创建 RabbitMQ Consumer
 	rabbitConsumer, err := mq.NewConsumer(application.RabbitMQ)
 	if err != nil {
-		application.Logger.Fatal("Failed to create RabbitMQ consumer", zap.Error(err))
+		application.Logger().Fatal("Failed to create RabbitMQ consumer", zap.Error(err))
 	}
 	defer rabbitConsumer.Close()
 
 	// 使用配置化的方式设置 RabbitMQ 基础设施（避免重复定义）
 	if err := rabbitConsumer.SetupInfrastructureFromConfig(&application.Config.RabbitMQ); err != nil {
-		application.Logger.Fatal("Failed to setup RabbitMQ infrastructure from config", zap.Error(err))
+		application.Logger().Fatal("Failed to setup RabbitMQ infrastructure from config", zap.Error(err))
 	}
 
 	// 启动消息消费
 	if err := startMessageConsumption(application, messageConsumerService, rabbitConsumer); err != nil {
-		application.Logger.Fatal("Failed to start message consumption", zap.Error(err))
+		application.Logger().Fatal("Failed to start message consumption", zap.Error(err))
 	}
 
 	// 等待中断信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	application.Logger.Info("Message consumer service is running. Press Ctrl+C to exit.")
+	application.Logger().Info("Message consumer service is running. Press Ctrl+C to exit.")
 	<-quit
 
-	application.Logger.Info("Received shutdown signal, stopping message consumer service...")
+	application.Logger().Info("Received shutdown signal, stopping message consumer service...")
 
 	// 优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := messageConsumerService.Shutdown(ctx); err != nil {
-		application.Logger.Error("Error during message consumer service shutdown", zap.Error(err))
+		application.Logger().Error("Error during message consumer service shutdown", zap.Error(err))
 	}
 
-	if err := application.Stop(); err != nil {
-		application.Logger.Error("Error during application shutdown", zap.Error(err))
+	if err := application.Stop(ctx); err != nil {
+		application.Logger().Error("Error during application shutdown", zap.Error(err))
 	}
 
-	application.Logger.Info("Message consumer service stopped gracefully")
+	application.Logger().Info("Message consumer service stopped gracefully")
 }
 
 // startMessageConsumption 启动消息消费
 func startMessageConsumption(app *app.App, messageConsumerService *consumer.MessageConsumerService, rabbitConsumer *mq.Consumer) error {
-	app.Logger.Info("Starting message consumption...")
+	app.Logger().Info("Starting message consumption...")
 
 	// 从配置中获取队列名称
 	if len(app.Config.RabbitMQ.Queues) == 0 {
@@ -85,7 +85,7 @@ func startMessageConsumption(app *app.App, messageConsumerService *consumer.Mess
 		}
 	}
 
-	app.Logger.Info("Message consumers started successfully",
+	app.Logger().Info("Message consumers started successfully",
 		zap.Strings("supported_message_types", messageConsumerService.GetRegisteredProcessorTypes()),
 	)
 
@@ -94,25 +94,25 @@ func startMessageConsumption(app *app.App, messageConsumerService *consumer.Mess
 
 // startQueueConsumer 启动单个队列的消费者
 func startQueueConsumer(app *app.App, messageConsumerService *consumer.MessageConsumerService, rabbitConsumer *mq.Consumer, queueName string) error {
-	app.Logger.Info("Starting consumer for queue", zap.String("queue", queueName))
+	app.Logger().Info("Starting consumer for queue", zap.String("queue", queueName))
 
 	// 创建消息处理函数
 	messageHandler := func(ctx context.Context, body []byte) error {
-		app.Logger.Info("Processing message from queue",
+		app.Logger().Info("Processing message from queue",
 			zap.String("queue", queueName),
 			zap.Int("body_size", len(body)),
 		)
 
 		// 委托给消息消费服务处理
 		if err := messageConsumerService.ConsumeMessage(ctx, body); err != nil {
-			app.Logger.Error("Failed to consume message",
+			app.Logger().Error("Failed to consume message",
 				zap.Error(err),
 				zap.String("queue", queueName),
 			)
 			return err
 		}
 
-		app.Logger.Debug("Message processed successfully",
+		app.Logger().Debug("Message processed successfully",
 			zap.String("queue", queueName),
 		)
 		return nil
@@ -120,12 +120,12 @@ func startQueueConsumer(app *app.App, messageConsumerService *consumer.MessageCo
 
 	// 启动消费协程（mq.Consumer.Consume 会阻塞，所以放在 goroutine 中）
 	go func() {
-		app.Logger.Info("Started consuming messages from queue",
+		app.Logger().Info("Started consuming messages from queue",
 			zap.String("queue", queueName),
 		)
 
 		if err := rabbitConsumer.Consume(queueName, "", messageHandler); err != nil {
-			app.Logger.Error("Consumer stopped with error",
+			app.Logger().Error("Consumer stopped with error",
 				zap.Error(err),
 				zap.String("queue", queueName),
 			)
