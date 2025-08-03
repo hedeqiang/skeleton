@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/hedeqiang/skeleton/internal/model"
 	"github.com/hedeqiang/skeleton/internal/service"
+	"github.com/hedeqiang/skeleton/pkg/errors"
 	"github.com/hedeqiang/skeleton/pkg/response"
 	"net/http"
 	"strconv"
@@ -57,7 +58,11 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	user, err := h.userService.CreateUser(c.Request.Context(), &req)
 	if err != nil {
 		h.logger.Error("Failed to create user", zap.Error(err))
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 
@@ -88,11 +93,15 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	user, err := h.userService.GetUser(c.Request.Context(), uint(id))
 	if err != nil {
 		h.logger.Error("Failed to get user", zap.Error(err))
-		if err.Error() == "user not found" {
+		if errors.IsNotFoundError(err) {
 			response.Error(c, http.StatusNotFound, "用户不存在")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
 
@@ -137,11 +146,15 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	user, err := h.userService.UpdateUser(c.Request.Context(), uint(id), &req)
 	if err != nil {
 		h.logger.Error("Failed to update user", zap.Error(err))
-		if err.Error() == "user not found" {
+		if errors.IsNotFoundError(err) {
 			response.Error(c, http.StatusNotFound, "用户不存在")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to update user")
 		return
 	}
 
@@ -171,11 +184,15 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	err = h.userService.DeleteUser(c.Request.Context(), uint(id))
 	if err != nil {
 		h.logger.Error("Failed to delete user", zap.Error(err))
-		if err.Error() == "user not found" {
+		if errors.IsNotFoundError(err) {
 			response.Error(c, http.StatusNotFound, "用户不存在")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to delete user")
 		return
 	}
 
@@ -200,7 +217,11 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, total, err := h.userService.ListUsers(c.Request.Context(), page, pageSize)
 	if err != nil {
 		h.logger.Error("Failed to list users", zap.Error(err))
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to list users")
 		return
 	}
 
@@ -244,11 +265,15 @@ func (h *UserHandler) Login(c *gin.Context) {
 	user, err := h.userService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		h.logger.Error("Failed to login", zap.Error(err))
-		if err.Error() == "invalid username or password" || err.Error() == "user account is disabled" {
+		if errors.IsUnauthorizedError(err) || errors.IsForbiddenError(err) {
 			response.Error(c, http.StatusUnauthorized, err.Error())
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		if appErr, ok := err.(*errors.AppError); ok {
+			response.Error(c, appErr.StatusCode(), appErr.Message)
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to login")
 		return
 	}
 

@@ -3,9 +3,9 @@ package service
 import (
 	"github.com/hedeqiang/skeleton/internal/model"
 	"github.com/hedeqiang/skeleton/internal/repository"
+	"github.com/hedeqiang/skeleton/pkg/errors"
 	"context"
-	"errors"
-	"fmt"
+	stdErrors "errors"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -37,26 +37,26 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 func (s *userService) CreateUser(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error) {
 	// 检查用户名是否已存在
 	existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("failed to check username: %w", err)
+	if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check username")
 	}
 	if existingUser != nil {
-		return nil, errors.New("username already exists")
+		return nil, errors.ErrUserExists
 	}
 
 	// 检查邮箱是否已存在
 	existingUser, err = s.userRepo.GetByEmail(ctx, req.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("failed to check email: %w", err)
+	if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check email")
 	}
 	if existingUser != nil {
-		return nil, errors.New("email already exists")
+		return nil, errors.ErrUserExists
 	}
 
 	// 加密密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeInternal, "failed to hash password")
 	}
 
 	// 创建用户
@@ -68,7 +68,7 @@ func (s *userService) CreateUser(ctx context.Context, req *model.CreateUserReque
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to create user")
 	}
 
 	return s.toUserResponse(user), nil
@@ -78,10 +78,10 @@ func (s *userService) CreateUser(ctx context.Context, req *model.CreateUserReque
 func (s *userService) GetUser(ctx context.Context, id uint) (*model.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+		if stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get user")
 	}
 
 	return s.toUserResponse(user), nil
@@ -91,21 +91,21 @@ func (s *userService) GetUser(ctx context.Context, id uint) (*model.UserResponse
 func (s *userService) UpdateUser(ctx context.Context, id uint, req *model.UpdateUserRequest) (*model.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+		if stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get user")
 	}
 
 	// 更新字段
 	if req.Username != "" {
 		// 检查用户名是否已被其他用户使用
 		existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to check username: %w", err)
+		if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check username")
 		}
 		if existingUser != nil && existingUser.ID != id {
-			return nil, errors.New("username already exists")
+			return nil, errors.ErrUserExists
 		}
 		user.Username = req.Username
 	}
@@ -113,11 +113,11 @@ func (s *userService) UpdateUser(ctx context.Context, id uint, req *model.Update
 	if req.Email != "" {
 		// 检查邮箱是否已被其他用户使用
 		existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("failed to check email: %w", err)
+		if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check email")
 		}
 		if existingUser != nil && existingUser.ID != id {
-			return nil, errors.New("email already exists")
+			return nil, errors.ErrUserExists
 		}
 		user.Email = req.Email
 	}
@@ -127,7 +127,7 @@ func (s *userService) UpdateUser(ctx context.Context, id uint, req *model.Update
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to update user")
 	}
 
 	return s.toUserResponse(user), nil
@@ -138,14 +138,14 @@ func (s *userService) DeleteUser(ctx context.Context, id uint) error {
 	// 检查用户是否存在
 	_, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found")
+		if stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.ErrUserNotFound
 		}
-		return fmt.Errorf("failed to get user: %w", err)
+		return errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get user")
 	}
 
 	if err := s.userRepo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return errors.Wrap(err, errors.ErrorTypeDatabase, "failed to delete user")
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (s *userService) ListUsers(ctx context.Context, page, pageSize int) ([]*mod
 	offset := (page - 1) * pageSize
 	users, total, err := s.userRepo.List(ctx, offset, pageSize)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list users: %w", err)
+		return nil, 0, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to list users")
 	}
 
 	responses := make([]*model.UserResponse, len(users))
@@ -178,20 +178,20 @@ func (s *userService) ListUsers(ctx context.Context, page, pageSize int) ([]*mod
 func (s *userService) Login(ctx context.Context, username, password string) (*model.UserResponse, error) {
 	user, err := s.userRepo.GetByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid username or password")
+		if stdErrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.ErrInvalidPassword
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get user")
 	}
 
 	// 检查用户状态
 	if user.Status != 1 {
-		return nil, errors.New("user account is disabled")
+		return nil, errors.ErrAccountDisabled
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, errors.New("invalid username or password")
+		return nil, errors.ErrInvalidPassword
 	}
 
 	return s.toUserResponse(user), nil
