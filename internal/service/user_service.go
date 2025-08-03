@@ -36,20 +36,20 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 // CreateUser 创建用户
 func (s *userService) CreateUser(ctx context.Context, req *model.CreateUserRequest) (*model.UserResponse, error) {
 	// 检查用户名是否已存在
-	existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
-	if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+	exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
+	if err != nil {
 		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check username")
 	}
-	if existingUser != nil {
+	if exists {
 		return nil, errors.ErrUserExists
 	}
 
 	// 检查邮箱是否已存在
-	existingUser, err = s.userRepo.GetByEmail(ctx, req.Email)
-	if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+	exists, err = s.userRepo.ExistsByEmail(ctx, req.Email)
+	if err != nil {
 		return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check email")
 	}
-	if existingUser != nil {
+	if exists {
 		return nil, errors.ErrUserExists
 	}
 
@@ -100,24 +100,38 @@ func (s *userService) UpdateUser(ctx context.Context, id uint, req *model.Update
 	// 更新字段
 	if req.Username != "" {
 		// 检查用户名是否已被其他用户使用
-		existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
-		if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+		exists, err := s.userRepo.ExistsByUsername(ctx, req.Username)
+		if err != nil {
 			return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check username")
 		}
-		if existingUser != nil && existingUser.ID != id {
-			return nil, errors.ErrUserExists
+		// 检查是否存在其他用户使用此用户名
+		if exists {
+			existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
+			if err != nil {
+				return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get existing user")
+			}
+			if existingUser.ID != id {
+				return nil, errors.ErrUserExists
+			}
 		}
 		user.Username = req.Username
 	}
 
 	if req.Email != "" {
 		// 检查邮箱是否已被其他用户使用
-		existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
-		if err != nil && !stdErrors.Is(err, gorm.ErrRecordNotFound) {
+		exists, err := s.userRepo.ExistsByEmail(ctx, req.Email)
+		if err != nil {
 			return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to check email")
 		}
-		if existingUser != nil && existingUser.ID != id {
-			return nil, errors.ErrUserExists
+		// 检查是否存在其他用户使用此邮箱
+		if exists {
+			existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+			if err != nil {
+				return nil, errors.Wrap(err, errors.ErrorTypeDatabase, "failed to get existing user")
+			}
+			if existingUser.ID != id {
+				return nil, errors.ErrUserExists
+			}
 		}
 		user.Email = req.Email
 	}

@@ -58,72 +58,72 @@ func (s *BaseService) GetLogger() *zap.Logger {
 	return s.logger
 }
 
-// ServiceManager 服务管理器
-type ServiceManager struct {
+// Services 服务集合
+type Services struct {
 	services []Service
 	logger   *zap.Logger
 }
 
-// NewServiceManager 创建服务管理器
-func NewServiceManager(logger *zap.Logger) *ServiceManager {
-	return &ServiceManager{
+// NewServices 创建服务集合
+func NewServices(logger *zap.Logger) *Services {
+	return &Services{
 		services: make([]Service, 0),
 		logger:   logger,
 	}
 }
 
-// AddService 添加服务
-func (sm *ServiceManager) AddService(service Service) {
-	sm.services = append(sm.services, service)
-	sm.logger.Info("Service added", zap.String("service", service.Name()))
+// Add 添加服务
+func (s *Services) Add(service Service) {
+	s.services = append(s.services, service)
+	s.logger.Info("Service added", zap.String("service", service.Name()))
 }
 
 // StartAll 启动所有服务
-func (sm *ServiceManager) StartAll(ctx context.Context) error {
-	for _, service := range sm.services {
+func (s *Services) StartAll(ctx context.Context) error {
+	for _, service := range s.services {
 		if err := service.Start(ctx); err != nil {
 			return fmt.Errorf("failed to start service %s: %w", service.Name(), err)
 		}
-		sm.logger.Info("Service started", zap.String("service", service.Name()))
+		s.logger.Info("Service started", zap.String("service", service.Name()))
 	}
 	return nil
 }
 
 // StopAll 停止所有服务
-func (sm *ServiceManager) StopAll(ctx context.Context) error {
-	for i := len(sm.services) - 1; i >= 0; i-- {
-		service := sm.services[i]
+func (s *Services) StopAll(ctx context.Context) error {
+	for i := len(s.services) - 1; i >= 0; i-- {
+		service := s.services[i]
 		if err := service.Stop(ctx); err != nil {
-			sm.logger.Error("Failed to stop service", 
+			s.logger.Error("Failed to stop service", 
 				zap.String("service", service.Name()), 
 				zap.Error(err))
 		} else {
-			sm.logger.Info("Service stopped", zap.String("service", service.Name()))
+			s.logger.Info("Service stopped", zap.String("service", service.Name()))
 		}
 	}
 	return nil
 }
 
 // HealthAll 检查所有服务健康状态
-func (sm *ServiceManager) HealthAll(ctx context.Context) error {
-	for _, service := range sm.services {
+func (s *Services) HealthAll(ctx context.Context) error {
+	for _, service := range s.services {
 		if err := service.Health(ctx); err != nil {
 			return errors.Wrap(err, errors.ErrorTypeInternal, 
 				fmt.Sprintf("service %s health check failed", service.Name()))
 		}
-		sm.logger.Debug("Service health check passed", zap.String("service", service.Name()))
+		s.logger.Debug("Service health check passed", zap.String("service", service.Name()))
 	}
 	return nil
 }
 
-// GetServices 获取所有服务
-func (sm *ServiceManager) GetServices() []Service {
-	return sm.services
+// List 获取所有服务
+func (s *Services) List() []Service {
+	return s.services
 }
 
-// GetServiceByName 根据名称获取服务
-func (sm *ServiceManager) GetServiceByName(name string) Service {
-	for _, service := range sm.services {
+// Get 根据名称获取服务
+func (s *Services) Get(name string) Service {
+	for _, service := range s.services {
 		if service.Name() == name {
 			return service
 		}
