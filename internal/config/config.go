@@ -22,6 +22,7 @@ type Config struct {
 	Trace       Trace               `mapstructure:"trace"`
 	JWT         JWT                 `mapstructure:"jwt"`
 	IDGenerator *IDGeneratorConfig  `mapstructure:"id_generator"`
+	I18n        I18nConfig          `mapstructure:"i18n"`
 }
 
 // App 应用配置
@@ -116,6 +117,14 @@ type IDGeneratorConfig struct {
 	BitsSequence  int           `mapstructure:"bits_sequence"`   // 序列号位数
 	BitsMachineID int           `mapstructure:"bits_machine_id"` // 机器ID位数
 	TimeUnit      time.Duration `mapstructure:"time_unit"`       // 时间单位
+}
+
+// I18nConfig 国际化配置
+type I18nConfig struct {
+	DefaultLanguage  string   `mapstructure:"default_language"`  // 默认语言
+	SupportLanguages []string `mapstructure:"support_languages"` // 支持的语言列表
+	MessagesPath     string   `mapstructure:"messages_path"`     // 消息文件路径
+	AcceptLanguages  []string `mapstructure:"accept_languages"`  // Accept-Language header 支持的语言
 }
 
 // LoadConfig 加载配置并返回 Config 实例

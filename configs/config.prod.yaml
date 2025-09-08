@@ -70,4 +70,11 @@ trace:
 # JWT 认证配置
 jwt:
   secret: "${JWT_SECRET}" # 生产环境必须从环境变量读取
-  expire_duration: "24h" 
+  expire_duration: "24h"
+
+# 国际化配置
+i18n:
+  default_language: "zh"           # 默认语言
+  support_languages: ["zh", "en"] # 支持的语言列表
+  messages_path: "./locales"       # 消息文件路径
+  accept_languages: ["zh", "zh-CN", "zh-Hans", "en", "en-US"] # Accept-Language header 支持的语言 

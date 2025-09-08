@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,23 +11,25 @@ import (
 type ErrorType string
 
 const (
-	ErrorTypeValidation    ErrorType = "validation"
-	ErrorTypeNotFound      ErrorType = "not_found"
-	ErrorTypeUnauthorized  ErrorType = "unauthorized"
-	ErrorTypeForbidden     ErrorType = "forbidden"
-	ErrorTypeConflict      ErrorType = "conflict"
-	ErrorTypeInternal      ErrorType = "internal"
-	ErrorTypeDatabase      ErrorType = "database"
-	ErrorTypeExternal      ErrorType = "external"
+	ErrorTypeValidation   ErrorType = "validation"
+	ErrorTypeNotFound     ErrorType = "not_found"
+	ErrorTypeUnauthorized ErrorType = "unauthorized"
+	ErrorTypeForbidden    ErrorType = "forbidden"
+	ErrorTypeConflict     ErrorType = "conflict"
+	ErrorTypeInternal     ErrorType = "internal"
+	ErrorTypeDatabase     ErrorType = "database"
+	ErrorTypeExternal     ErrorType = "external"
 )
 
 // AppError 应用错误结构
 type AppError struct {
-	Type    ErrorType `json:"type"`
-	Message string    `json:"message"`
-	Code    int       `json:"code"`
-	Err     error    `json:"-"`
-	Details string    `json:"details,omitempty"`
+	Type      ErrorType              `json:"type"`
+	Message   string                 `json:"message"`
+	Code      int                    `json:"code"`
+	Err       error                  `json:"-"`
+	Details   string                 `json:"details,omitempty"`
+	MessageID string                 `json:"-"` // i18n 消息键
+	Data      map[string]interface{} `json:"-"` // 模板数据
 }
 
 // Error 实现error接口
@@ -65,6 +68,18 @@ func New(errorType ErrorType, message string) *AppError {
 	}
 }
 
+// NewI18n 创建新的支持国际化的应用错误
+func NewI18n(errorType ErrorType, messageID string, data map[string]interface{}) *AppError {
+	code := getStatusCodeByType(errorType)
+	return &AppError{
+		Type:      errorType,
+		Message:   messageID, // 作为默认消息
+		Code:      code,
+		MessageID: messageID,
+		Data:      data,
+	}
+}
+
 // Wrap 包装现有错误
 func Wrap(err error, errorType ErrorType, message string) *AppError {
 	code := getStatusCodeByType(errorType)
@@ -76,9 +91,38 @@ func Wrap(err error, errorType ErrorType, message string) *AppError {
 	}
 }
 
+// WrapI18n 包装现有错误，支持国际化
+func WrapI18n(err error, errorType ErrorType, messageID string, data map[string]interface{}) *AppError {
+	code := getStatusCodeByType(errorType)
+	return &AppError{
+		Type:      errorType,
+		Message:   messageID,
+		Code:      code,
+		Err:       err,
+		MessageID: messageID,
+		Data:      data,
+	}
+}
+
 // WithDetails 添加错误详情
 func (e *AppError) WithDetails(details string) *AppError {
 	e.Details = details
+	return e
+}
+
+// LocalizedMessage 获取本地化错误消息
+func (e *AppError) LocalizedMessage(ctx context.Context, i18n interface {
+	T(context.Context, string, map[string]interface{}) string
+}) string {
+	if e.MessageID != "" && i18n != nil {
+		return i18n.T(ctx, e.MessageID, e.Data)
+	}
+	return e.Message
+}
+
+// WithData 设置模板数据
+func (e *AppError) WithData(data map[string]interface{}) *AppError {
+	e.Data = data
 	return e
 }
 
@@ -102,18 +146,18 @@ func getStatusCodeByType(errorType ErrorType) int {
 	}
 }
 
-// 预定义错误
+// 预定义错误 (支持 i18n)
 var (
-	ErrUserNotFound     = New(ErrorTypeNotFound, "用户不存在")
-	ErrUserExists       = New(ErrorTypeConflict, "用户已存在")
-	ErrInvalidPassword  = New(ErrorTypeUnauthorized, "密码错误")
-	ErrAccountDisabled  = New(ErrorTypeForbidden, "账户已禁用")
-	ErrInvalidToken     = New(ErrorTypeUnauthorized, "无效的令牌")
-	ErrTokenExpired     = New(ErrorTypeUnauthorized, "令牌已过期")
-	ErrInvalidInput     = New(ErrorTypeValidation, "输入参数无效")
-	ErrDatabaseError    = New(ErrorTypeDatabase, "数据库错误")
-	ErrExternalService  = New(ErrorTypeExternal, "外部服务错误")
-	ErrInternalError    = New(ErrorTypeInternal, "内部服务器错误")
+	ErrUserNotFound    = NewI18n(ErrorTypeNotFound, "errors.user_not_found", nil)
+	ErrUserExists      = NewI18n(ErrorTypeConflict, "errors.user_exists", nil)
+	ErrInvalidPassword = NewI18n(ErrorTypeUnauthorized, "errors.invalid_password", nil)
+	ErrAccountDisabled = NewI18n(ErrorTypeForbidden, "errors.account_disabled", nil)
+	ErrInvalidToken    = NewI18n(ErrorTypeUnauthorized, "errors.invalid_token", nil)
+	ErrTokenExpired    = NewI18n(ErrorTypeUnauthorized, "errors.token_expired", nil)
+	ErrInvalidInput    = NewI18n(ErrorTypeValidation, "errors.invalid_input", nil)
+	ErrDatabaseError   = NewI18n(ErrorTypeDatabase, "errors.database_error", nil)
+	ErrExternalService = NewI18n(ErrorTypeExternal, "errors.external_service", nil)
+	ErrInternalError   = NewI18n(ErrorTypeInternal, "errors.internal_error", nil)
 )
 
 // 便利函数

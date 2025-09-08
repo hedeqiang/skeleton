@@ -11,6 +11,7 @@
 - **数据库**: GORM (支持 MySQL、PostgreSQL)
 - **缓存**: Redis
 - **消息队列**: RabbitMQ
+- **国际化**: go-i18n (支持中英文多语言)
 - **配置管理**: Viper
 - **日志**: Zap
 - **参数验证**: Validator
@@ -19,7 +20,8 @@
 ### 架构特点
 - **依赖注入**: 完全的 DI 模式，使用 Wire 进行代码生成
 - **分层架构**: Handler -> Service -> Repository 清晰分层
-- **中间件栈**: Recovery、CORS、RequestID、Logger 等完整支持
+- **中间件栈**: Recovery、CORS、RequestID、Logger、I18n 等完整支持
+- **多语言支持**: 自动语言检测，支持中英文国际化
 - **优雅启停**: 完整的生命周期管理
 - **统一响应**: 标准化的 API 返回格式
 - **配置化管理**: 多环境配置支持
@@ -49,10 +51,14 @@ skeleton/
 │   └── wire/                   # 依赖注入
 ├── pkg/                        # 公共包
 │   ├── database/              # 数据库连接
+│   ├── i18n/                  # 国际化支持
 │   ├── logger/                # 日志工具
 │   ├── mq/                    # 消息队列
 │   ├── redis/                 # Redis 客户端
 │   └── response/              # 响应工具
+├── locales/                    # 多语言消息文件
+│   ├── zh.yaml                # 中文消息
+│   └── en.yaml                # 英文消息
 ├── docs/                       # 文档
 ├── scripts/                    # 脚本文件
 │   ├── migrate/               # 数据库迁移
@@ -95,6 +101,12 @@ redis:
 # RabbitMQ 配置
 rabbitmq:
   url: "amqp://guest:guest@127.0.0.1:5672/"
+
+# 国际化配置
+i18n:
+  default_language: "zh"           # 默认语言
+  support_languages: ["zh", "en"] # 支持的语言列表
+  messages_path: "./locales"       # 消息文件路径
 ```
 
 ### 4. 数据库迁移
@@ -121,7 +133,15 @@ make run-consumer
 - RESTful API 设计
 - 统一的错误处理和响应格式
 - 参数验证和数据绑定
-- 中间件支持 (CORS、日志、恢复等)
+- 中间件支持 (CORS、日志、恢复、国际化等)
+
+### 🌍 国际化 (i18n)
+- 支持中英文双语言
+- 自动语言检测 (Accept-Language Header)
+- 错误消息国际化
+- 灵活的消息模板系统
+
+> 详细使用说明请参考: [国际化文档](docs/I18N.md)
 
 ### 🗄️ 数据库
 - GORM ORM 支持
@@ -173,8 +193,20 @@ make run-consumer
 
 ### 创建用户
 ```bash
+# 中文界面
 curl -X POST http://localhost:8080/api/v1/users \
   -H "Content-Type: application/json" \
+  -H "Accept-Language: zh-CN" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+
+# 英文界面
+curl -X POST http://localhost:8080/api/v1/users \
+  -H "Content-Type: application/json" \
+  -H "Accept-Language: en-US" \
   -d '{
     "username": "testuser",
     "email": "test@example.com",
@@ -248,10 +280,11 @@ Database -> Repository -> Service -> Handler
 
 ### 中间件链
 ```go
-r.Use(middleware.RequestID())      // 请求 ID
-r.Use(middleware.NewLogger(logger)) // 日志记录
+r.Use(middleware.RequestID())        // 请求 ID
+r.Use(middleware.NewLogger(logger))  // 日志记录  
 r.Use(middleware.NewRecovery(logger)) // 错误恢复
-r.Use(middleware.CORS())           // 跨域处理
+r.Use(middleware.CORS())             // 跨域处理
+r.Use(middleware.NewI18n(i18n))      // 国际化支持
 ```
 
 ### 统一响应格式
@@ -272,6 +305,8 @@ r.Use(middleware.CORS())           // 跨域处理
 
 ## 📚 详细文档
 
+- [国际化使用指南](docs/I18N.md) - i18n 多语言完整使用指南
+- [国际化快速参考](docs/I18N_QUICKSTART.md) - i18n 快速参考和代码片段
 - [消息队列使用指南](docs/MESSAGE_QUEUE.md) - RabbitMQ 完整使用指南
 - [Wire 架构文档](docs/WIRE_ARCHITECTURE.md) - 依赖注入架构
 

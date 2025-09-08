@@ -1,0 +1,73 @@
+# English message file
+
+# Error messages
+errors:
+  user_not_found:
+    other: "User not found"
+  user_exists:
+    other: "User already exists"
+  invalid_password:
+    other: "Invalid password"
+  account_disabled:
+    other: "Account disabled"
+  invalid_token:
+    other: "Invalid token"
+  token_expired:
+    other: "Token expired"
+  invalid_input:
+    other: "Invalid input parameters"
+  database_error:
+    other: "Database error"
+  external_service:
+    other: "External service error"
+  internal_error:
+    other: "Internal server error"
+  validation_failed:
+    other: "Validation failed"
+  unauthorized:
+    other: "Unauthorized access"
+  forbidden:
+    other: "Access forbidden"
+  not_found:
+    other: "Resource not found"
+  conflict:
+    other: "Resource conflict"
+
+# Common messages
+common:
+  success:
+    other: "Operation successful"
+  failed:
+    other: "Operation failed"
+  welcome:
+    other: "Welcome!"
+  hello:
+    one: "Hello {{.Name}}"
+    other: "Hello {{.Name}}"
+  
+# API response messages
+api:
+  user:
+    created:
+      other: "User created successfully"
+    updated:
+      other: "User updated successfully"
+    deleted:
+      other: "User deleted successfully"
+    login_success:
+      other: "Login successful"
+    logout_success:
+      other: "Logout successful"
+  
+# Validation messages
+validation:
+  required:
+    other: "{{.Field}} is required"
+  min_length:
+    other: "{{.Field}} must be at least {{.Min}} characters"
+  max_length:
+    other: "{{.Field}} must be at most {{.Max}} characters"
+  email:
+    other: "Please enter a valid email address"
+  username:
+    other: "Username can only contain letters, numbers and underscores"

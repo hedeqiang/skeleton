@@ -10,6 +10,7 @@ import (
 	"github.com/hedeqiang/skeleton/internal/scheduler"
 	"github.com/hedeqiang/skeleton/internal/service"
 	"github.com/hedeqiang/skeleton/pkg/database"
+	"github.com/hedeqiang/skeleton/pkg/i18n"
 	"github.com/hedeqiang/skeleton/pkg/idgen"
 	"github.com/hedeqiang/skeleton/pkg/logger"
 	"github.com/hedeqiang/skeleton/pkg/mq"
@@ -36,9 +37,13 @@ var InfrastructureSet = wire.NewSet(
 	ProvideDatabasesConfig,
 	ProvideRedisConfig,
 	ProvideRabbitMQConfig,
+	ProvideI18nConfig,
 
 	// 日志
 	logger.New,
+
+	// 国际化
+	ProvideI18n,
 
 	// 数据库
 	database.NewDatabases,
@@ -123,6 +128,31 @@ func ProvideRabbitMQConfig(cfg *config.Config) *config.RabbitMQ {
 	return &cfg.RabbitMQ
 }
 
+// ProvideI18nConfig 提供I18n配置
+func ProvideI18nConfig(cfg *config.Config) *config.I18nConfig {
+	return &cfg.I18n
+}
+
+// ProvideI18n 提供I18n实例
+func ProvideI18n(cfg *config.I18nConfig, logger *zap.Logger) (*i18n.I18n, error) {
+	i18nConfig := i18n.Config{
+		DefaultLanguage: cfg.DefaultLanguage,
+		SupportLangs:    cfg.SupportLanguages,
+		MessagesPath:    cfg.MessagesPath,
+	}
+
+	i18n, err := i18n.New(i18nConfig)
+	if err != nil {
+		logger.Error("Failed to create i18n", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("I18n created successfully",
+		zap.String("default_language", i18nConfig.DefaultLanguage),
+		zap.Strings("support_languages", i18nConfig.SupportLangs))
+	return i18n, nil
+}
+
 // ProvideProducer 提供 MQ Producer
 func ProvideProducer(conn *amqp.Connection) *mq.Producer {
 	return mq.NewProducer(conn)
@@ -147,6 +177,7 @@ func ProvideApp(
 	redisClient *redis.Client,
 	rabbitMQ *amqp.Connection,
 	idGenerator idgen.IDGenerator,
+	i18n *i18n.I18n,
 	userHandler *v1.UserHandler,
 	helloHandler *v1.HelloHandler,
 	schedulerHandler *v1.SchedulerHandler,
@@ -160,6 +191,7 @@ func ProvideApp(
 		redisClient,
 		rabbitMQ,
 		idGenerator,
+		i18n,
 		userHandler,
 		helloHandler,
 		schedulerHandler,

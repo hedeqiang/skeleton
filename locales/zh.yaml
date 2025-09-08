@@ -1,0 +1,73 @@
+# 中文消息文件
+
+# 错误消息
+errors:
+  user_not_found:
+    other: "用户不存在"
+  user_exists:
+    other: "用户已存在"
+  invalid_password:
+    other: "密码错误"
+  account_disabled:
+    other: "账户已禁用"
+  invalid_token:
+    other: "无效的令牌"
+  token_expired:
+    other: "令牌已过期"
+  invalid_input:
+    other: "输入参数无效"
+  database_error:
+    other: "数据库错误"
+  external_service:
+    other: "外部服务错误"
+  internal_error:
+    other: "内部服务器错误"
+  validation_failed:
+    other: "验证失败"
+  unauthorized:
+    other: "未授权访问"
+  forbidden:
+    other: "访问被禁止"
+  not_found:
+    other: "资源未找到"
+  conflict:
+    other: "资源冲突"
+
+# 通用消息
+common:
+  success:
+    other: "操作成功"
+  failed:
+    other: "操作失败"
+  welcome:
+    other: "欢迎！"
+  hello:
+    one: "你好 {{.Name}}"
+    other: "你好 {{.Name}}"
+  
+# API响应消息
+api:
+  user:
+    created:
+      other: "用户创建成功"
+    updated:
+      other: "用户更新成功"
+    deleted:
+      other: "用户删除成功"
+    login_success:
+      other: "登录成功"
+    logout_success:
+      other: "退出成功"
+  
+# 验证消息
+validation:
+  required:
+    other: "{{.Field}}是必填项"
+  min_length:
+    other: "{{.Field}}最少需要{{.Min}}个字符"
+  max_length:
+    other: "{{.Field}}最多允许{{.Max}}个字符"
+  email:
+    other: "请输入有效的邮箱地址"
+  username:
+    other: "用户名只能包含字母、数字和下划线"

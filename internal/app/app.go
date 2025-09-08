@@ -7,6 +7,7 @@ import (
 
 	"github.com/hedeqiang/skeleton/internal/router"
 	"github.com/hedeqiang/skeleton/internal/scheduler"
+	"github.com/hedeqiang/skeleton/pkg/i18n"
 	"github.com/hedeqiang/skeleton/pkg/idgen"
 
 	"github.com/hedeqiang/skeleton/internal/config"
@@ -40,6 +41,7 @@ type App struct {
 	Redis       *redis.Client
 	RabbitMQ    *amqp.Connection
 	IDGenerator idgen.IDGenerator
+	I18n        *i18n.I18n
 
 	// 业务层依赖
 	UserHandler      *v1.UserHandler
@@ -57,6 +59,7 @@ func NewApp(
 	redis *redis.Client,
 	rabbitMQ *amqp.Connection,
 	idGenerator idgen.IDGenerator,
+	i18n *i18n.I18n,
 	userHandler *v1.UserHandler,
 	helloHandler *v1.HelloHandler,
 	schedulerHandler *v1.SchedulerHandler,
@@ -70,7 +73,7 @@ func NewApp(
 	}
 
 	// 初始化路由
-	engine := router.SetupRouter(logger, handlers)
+	engine := router.SetupRouter(logger, i18n, handlers)
 	logger.Info("Router initialized successfully")
 
 	// 初始化 HTTP Server
@@ -89,6 +92,7 @@ func NewApp(
 		Redis:            redis,
 		RabbitMQ:         rabbitMQ,
 		IDGenerator:      idGenerator,
+		I18n:             i18n,
 		UserHandler:      userHandler,
 		HelloHandler:     helloHandler,
 		SchedulerHandler: schedulerHandler,
